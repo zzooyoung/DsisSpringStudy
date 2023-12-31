@@ -40,7 +40,7 @@ public class CoffeeBeanService {
         // CoffeeBean을 CoffeeBeanDto로 변환하여 리스트로 반환
         return coffeeBeans.stream()
                 .map(coffeeBean -> new CoffeeBeanDto(coffeeBean.getId(), coffeeBean.getName(), coffeeBean.getQuantity()))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public void deleteByCoffeeBeanId(Long id) {

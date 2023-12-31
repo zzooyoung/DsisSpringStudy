@@ -2,8 +2,14 @@ package com.example.thisisspring.controller;
 
 import com.example.thisisspring.domain.CoffeeBean;
 import com.example.thisisspring.dto.CoffeeBeanDto;
+import com.example.thisisspring.dto.UpdateCoffeeBeanDto;
 import com.example.thisisspring.repository.CoffeeBeanRepository;
 import com.example.thisisspring.service.CoffeeBeanService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.hibernate.sql.Update;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
@@ -13,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
 
+@Tag(name = "관리자", description = "커피 재고 관리자 API")
 @RestController
 @RequestMapping("/coffee") // <-- 엔드포d인트를 coffee 로 변경
 public class CoffeeBeanController {
@@ -27,12 +34,27 @@ public class CoffeeBeanController {
         this.coffeeBeanRepository = coffeeBeanRepository;
     }
 
+    @Operation(
+            summary = "커피 데이터 생성",
+            description = "10개의 커피 임시 데이터 생성",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "성공")
+            }
+    )
     @PostMapping("/create")
     public String createCoffeeBeans() {
         coffeeBeanService.saveTenCoffeeBeansEfficient();
         return "10개의 카페 데이터가 생성되었습니다.";
     }
 
+    @Operation(
+            summary = "커피 데이터 조회",
+            description = "모든 커피 데이터 전체 조회",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = ""),
+                    @ApiResponse(responseCode = "204", description = "")
+            }
+    )
     @GetMapping("/list")
     public ResponseEntity<List<CoffeeBeanDto>> getAllCoffeeBeans() {
         List<CoffeeBeanDto> coffeeBeansDto = coffeeBeanService.getAllCoffeeBeans();
@@ -46,8 +68,18 @@ public class CoffeeBeanController {
         }
     }
 
+    @Operation(
+            summary = "커피 데이터 삭제",
+            description = "단일 커피 데이터 삭제",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "성공"),
+                    @ApiResponse(responseCode = "404", description = "해당 ID의 커피 데이터를 찾을 수 없습니다.")
+            }
+    )
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<String> deleteCoffeeBeanById(@PathVariable Long id) {
+    public ResponseEntity<String> deleteCoffeeBeanById(
+            @Parameter(description = "삭제할 항목의 id값", example = "1", required = true)
+            @PathVariable(name = "id") Long id) {
         try {
             coffeeBeanRepository.deleteById(id);
             return new ResponseEntity<>("커피 데이터가 삭제되었습니다.", HttpStatus.OK);
@@ -60,8 +92,18 @@ public class CoffeeBeanController {
         }
     }
 
+    @Operation(
+            summary = "커피 데이터 재고 추가",
+            description = "단일 커피 데이터 재고 추가",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "단일 커피 데이터 재고 추가 완료"
+                    )
+            }
+    )
     @PutMapping("/update")
-    public ResponseEntity<String> updateCoffeeBeanQuantity(@RequestBody CoffeeBeanDto coffeeBeanDto) {
+    public ResponseEntity<String> updateCoffeeBeanQuantity(@RequestBody UpdateCoffeeBeanDto coffeeBeanDto) {
         try {
             coffeeBeanService.updateCoffeeBeanQuantity(coffeeBeanDto.getName(),coffeeBeanDto.getQuantity());
             return ResponseEntity.ok("커피 데이터의 재고가 업데이트 되었습니다.");
