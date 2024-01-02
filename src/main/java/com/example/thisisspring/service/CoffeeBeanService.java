@@ -2,14 +2,14 @@ package com.example.thisisspring.service;
 
 import com.example.thisisspring.domain.CoffeeBean;
 import com.example.thisisspring.dto.CoffeeBeanDto;
+import com.example.thisisspring.exception.CustomException;
+import com.example.thisisspring.exception.ErrorCode;
 import com.example.thisisspring.repository.CoffeeBeanRepository;
+import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 
-import jakarta.annotation.PostConstruct;
-import jakarta.persistence.EntityNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class CoffeeBeanService {
@@ -34,9 +34,12 @@ public class CoffeeBeanService {
         coffeeBeanRepository.saveAll(coffeeBeans);
     }
 
-    public List<CoffeeBeanDto> getAllCoffeeBeans() {
+    public List<CoffeeBeanDto> getAllCoffeeBeansDto() {
         List<CoffeeBean> coffeeBeans = coffeeBeanRepository.findAll();
 
+        if (coffeeBeans.isEmpty()) {
+            throw new CustomException(ErrorCode.COFFEE_BEAN_DATA_NOT_FOUND);
+        }
         // CoffeeBean을 CoffeeBeanDto로 변환하여 리스트로 반환
         return coffeeBeans.stream()
                 .map(coffeeBean -> new CoffeeBeanDto(coffeeBean.getId(), coffeeBean.getName(), coffeeBean.getQuantity()))
@@ -46,11 +49,4 @@ public class CoffeeBeanService {
     public void deleteByCoffeeBeanId(Long id) {
         coffeeBeanRepository.deleteById(id);
     }
-    public void updateCoffeeBeanQuantity(String name, int quantityToAdd) {
-        CoffeeBean coffeeBean = coffeeBeanRepository.findByName(name)
-                .orElseThrow(() -> new EntityNotFoundException("해당 이름의 커피 데이터를 찾을 수 없습니다. "));
-        coffeeBean.setQuantity(coffeeBean.getQuantity() + quantityToAdd);
-        coffeeBeanRepository.save(coffeeBean);
-    }
-
 }

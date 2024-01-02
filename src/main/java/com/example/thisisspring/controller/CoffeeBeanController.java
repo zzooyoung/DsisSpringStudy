@@ -2,21 +2,20 @@ package com.example.thisisspring.controller;
 
 import com.example.thisisspring.domain.CoffeeBean;
 import com.example.thisisspring.dto.CoffeeBeanDto;
-import com.example.thisisspring.dto.UpdateCoffeeBeanDto;
+import com.example.thisisspring.dto.Response;
 import com.example.thisisspring.repository.CoffeeBeanRepository;
 import com.example.thisisspring.service.CoffeeBeanService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.hibernate.sql.Update;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
 
 @Tag(name = "관리자", description = "커피 재고 관리자 API")
@@ -42,9 +41,10 @@ public class CoffeeBeanController {
             }
     )
     @PostMapping("/create")
-    public String createCoffeeBeans() {
+    public ResponseEntity<Response<List<CoffeeBeanDto>>> createCoffeeBeans() {
         coffeeBeanService.saveTenCoffeeBeansEfficient();
-        return "10개의 카페 데이터가 생성되었습니다.";
+        List<CoffeeBeanDto> coffeeBeansDto = coffeeBeanService.getAllCoffeeBeansDto();
+        return ResponseEntity.ok(new Response<>(coffeeBeansDto, "10개의 커피 원두 데이터 추가 완료!"));
     }
 
     @Operation(
@@ -56,16 +56,9 @@ public class CoffeeBeanController {
             }
     )
     @GetMapping("/list")
-    public ResponseEntity<List<CoffeeBeanDto>> getAllCoffeeBeans() {
-        List<CoffeeBeanDto> coffeeBeansDto = coffeeBeanService.getAllCoffeeBeans();
-
-        if (coffeeBeansDto.isEmpty()) {
-            // 만약 데이터가 없을 경우
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        } else {
-            // 데이터가 있을 경우
-            return new ResponseEntity<>(coffeeBeansDto, HttpStatus.OK);
-        }
+    public ResponseEntity<Response<List<CoffeeBeanDto>>> getAllCoffeebeans() {
+        List<CoffeeBeanDto> coffeeBeansDto = coffeeBeanService.getAllCoffeeBeansDto();
+        return ResponseEntity.ok(new Response<>(coffeeBeansDto, "모든 커피 데이터 열람 완료!"));
     }
 
     @Operation(
@@ -103,14 +96,19 @@ public class CoffeeBeanController {
             }
     )
     @PutMapping("/update")
-    public ResponseEntity<String> updateCoffeeBeanQuantity(@RequestBody UpdateCoffeeBeanDto coffeeBeanDto) {
+    public void updateCoffeeBeanQuantity(String name, int quantityToAdd) {
         try {
-            coffeeBeanService.updateCoffeeBeanQuantity(coffeeBeanDto.getName(),coffeeBeanDto.getQuantity());
-            return ResponseEntity.ok("커피 데이터의 재고가 업데이트 되었습니다.");
+            CoffeeBean coffeeBean = coffeeBeanRepository.findByName(name)
+                    .orElseThrow(() -> new EntityNotFoundException("해당 이름의 커피 데이터를 찾을 수 없습니다."));
+
+            coffeeBean.updateQuantity(quantityToAdd);
+
+            coffeeBeanRepository.save(coffeeBean);
+
         } catch (EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            throw e;
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("커피 데이터 재고 업데이트 중에 오류가 발생했습니다.");
+            throw new RuntimeException("커피 데이터 재고 업데이트 중에 오류가 발생했습니다.", e);
         }
     }
 }
